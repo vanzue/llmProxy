@@ -4,6 +4,16 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const authenticate = (req, res, next) => {
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey || apiKey !== process.env.SERVICE_KEY) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    next();
+};
+
+app.use(authenticate);
+
 app.use(express.json());
 
 const azureEndpointDalle = process.env.AZURE_ENDPOINT_DALLE;
