@@ -39,3 +39,4 @@ tomli==2.0.1
 tqdm==4.66.4
 typing_extensions==4.11.0
 urllib3==2.2.1
+gunicorn

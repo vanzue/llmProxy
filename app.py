@@ -10,7 +10,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-PORT = int(os.getenv('PORT', 3000))
+PORT = int(os.getenv('PORT', 5000))
 SERVICE_KEY = os.getenv('SERVICE_KEY')
 
 AZURE_ENDPOINT_DALLE = os.getenv('AZURE_ENDPOINT_DALLE')
@@ -111,4 +111,4 @@ def generate_comics_endpoint():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=PORT)
+    app.run(host="0.0.0.0", port=PORT)
