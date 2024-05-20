@@ -4,6 +4,8 @@ from flask import Flask, request, jsonify
 import requests
 from dotenv import load_dotenv
 
+from storyToComics import generate_comics
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -91,6 +93,21 @@ def generate_scenes():
         return jsonify({'message': 'Error communicating with GPT4 service', 'details': str(e)}), 500
     except ValueError as e:
         return jsonify({'message': 'Error parsing response', 'details': str(e)}), 500
+
+
+@app.route('/generate/comics', methods=['POST'])
+@authenticate
+def generate_comics_endpoint():
+    try:
+        data = request.json
+        style = data['style']
+        shortStory = data['shortStory']
+        n = data['n']
+
+        comics = generate_comics(style, shortStory, n)
+        return jsonify(comics)
+    except Exception as e:
+        return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 
 if __name__ == '__main__':

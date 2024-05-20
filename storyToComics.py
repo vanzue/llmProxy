@@ -1,7 +1,6 @@
 from agents import StoryWritingAgent
 from draw_agent import AmericanStyleComicAgent, ChineseStyleComicAgent
 import requests
-from PIL import Image
 from io import BytesIO
 
 
@@ -35,15 +34,3 @@ def generate_comics(style, shortStory, n):
         print(f"Comic generated: {url}")
 
     return comic_urls
-
-
-if __name__ == "__main__":
-    # Example usage
-    style = 'chinese'
-    shortStory = '早上，一只小猫在花园里追逐一只蝴蝶。后来，它遇到了一只大狗。'
-    n = 4
-    comic_urls = generate_comics(style, shortStory, n)
-    for i, url in enumerate(comic_urls):
-        response = requests.get(url)
-        img = Image.open(BytesIO(response.content))
-        img.save(f"./downloaded_image{i}.png")
