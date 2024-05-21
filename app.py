@@ -3,6 +3,7 @@ import os
 from flask import Flask, request, jsonify
 import requests
 from dotenv import load_dotenv
+import logging
 
 from storyToComics import generate_comics
 
@@ -99,16 +100,19 @@ def generate_scenes():
 @authenticate
 def generate_comics_endpoint():
     try:
+        app.logger.info('Generating comics...')
         data = request.json
         style = data['style']
         shortStory = data['shortStory']
         n = data['n']
-
+        app.logger.info(f"Style: {style}, Short Story: {shortStory}, n: {n}")
         comics = generate_comics(style, shortStory, n)
+        app.logger.info('Comics generated successfully')
         return jsonify(comics)
     except Exception as e:
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     app.run(host="0.0.0.0", port=PORT)
