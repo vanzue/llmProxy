@@ -100,16 +100,17 @@ def generate_scenes():
 @authenticate
 def generate_comics_endpoint():
     try:
-        app.logger.info('Generating comics...')
+        print("generating comics.")
         data = request.json
         style = data['style']
         shortStory = data['shortStory']
         n = data['n']
-        app.logger.info(f"Style: {style}, Short Story: {shortStory}, n: {n}")
+        print(f"Style: {style}, Short Story: {shortStory}, n: {n}")
         comics = generate_comics(style, shortStory, n)
-        app.logger.info('Comics generated successfully')
+        print('Comics generated successfully')
         return jsonify(comics)
     except Exception as e:
+        print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 
