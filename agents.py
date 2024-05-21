@@ -40,15 +40,15 @@ class ChatClientAgent(Agent):
 
 class AzureOpenAIClientChatAgent(ChatClientAgent):
     def __init__(self, system_prompt):
-        deployment = os.environ["CHAT_COMPLETIONS_DEPLOYMENT_NAME"]
-        self.model = deployment
+        #deployment = os.environ["CHAT_COMPLETIONS_DEPLOYMENT_NAME"]
+        self.model = "35turbojapan"
         self.messages = system_prompt
 
     def talk(self):
         client = AzureOpenAI(
-        azure_endpoint=os.getenv('AZURE_SWEDEN_OPENAI_ENDPOINT'),
-        api_key=os.getenv('AZURE_SWEDEN_OPENAI_KEY'),
-        api_version="2024-02-01")
+        azure_endpoint=os.getenv('AZURE_ENDPOINT_GPT35'),
+        api_key=os.getenv('AZURE_API_KEY_GPT35'),
+        api_version="2024-02-15-preview")
         
         completion = client.chat.completions.create(
             model=self.model,
