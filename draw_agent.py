@@ -40,23 +40,9 @@ class AzureOpenAIDalleDrawAgent(DrawAgent):
 
 class ComicAgent(AzureOpenAIDalleDrawAgent):
     def __init__(self, styleDescription):
-        load_dotenv()
-        endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
-        nextScene = ""
-
+        super().__init__()
         self.comic_template = """创建一个漫画风格的插图，场景是：{scene_description}。插图应该忠实绘画出场景里发生的事情。插图的风格如下:""" + \
             styleDescription
-
-        token_provider = get_bearer_token_provider(
-            DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
-
-        self.client = AzureOpenAI(
-            azure_endpoint=endpoint,
-            azure_ad_token_provider=token_provider,
-            api_version="2024-02-01",
-        )
-
-        self.deploymentName = "Dalle3"
 
     def draw(self, scene_description):
         prompt = self.comic_template.format(
