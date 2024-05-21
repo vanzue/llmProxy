@@ -7,6 +7,7 @@ import logging
 
 from agents import StoryWritingAgent
 from azure_openai import AzureOpenAIClientSingleton
+from draw_agent import AmericanStyleComicAgent, ChineseStyleComicAgent
 from storyToComics import generate_comics
 
 load_dotenv()
@@ -142,6 +143,26 @@ def generate_stories_endpoint():
     except Exception as e:
         print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating stories', 'details': str(e)}), 500
+
+@app.route('/generate/single_comic', methods=['POST'])
+@authenticate
+def generate_comic_endpoint():
+    try:
+        data = request.json
+        story = data['story']
+        style = data['style']
+        if style!='american' and style!='chinese':
+            raise ValueError('Invalid style. Please choose "american" or "chinese"')
+        
+        comic_agent = AmericanStyleComicAgent() if style=='american' else ChineseStyleComicAgent()
+
+        # Provide command to StoryWritingAgent to generate n stories
+        comic_agent.provideCommand({"scene": story})
+        url = comic_agent.work()
+        return url
+    except Exception as e:
+        print("error when generating comics:", e.message)
+        return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
