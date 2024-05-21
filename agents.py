@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from agent_prompt import confuciusAgentPrompt, luoXiangAgentPrompt, superIntelligentAgentPrompt, storytellingAgentPrompt
 from abc import ABC, abstractmethod
 
+from azure_openai import AzureOpenAIClientSingleton
+
 
 class Agent(ABC):
     @abstractmethod
@@ -44,18 +46,9 @@ class ChatClientAgent(Agent):
 class AzureOpenAIClientChatAgent(ChatClientAgent):
     def __init__(self, system_prompt):
         load_dotenv()
-
-        endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
         deployment = os.environ["CHAT_COMPLETIONS_DEPLOYMENT_NAME"]
 
-        token_provider = get_bearer_token_provider(
-            DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
-
-        self.client = AzureOpenAI(
-            azure_endpoint=endpoint,
-            azure_ad_token_provider=token_provider,
-            api_version="2024-02-01",
-        )
+        self.client = AzureOpenAIClientSingleton.get_client()
 
         self.model = deployment
         self.messages = system_prompt
