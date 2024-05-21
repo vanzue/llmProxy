@@ -16,7 +16,6 @@ EXPOSE 5000
 # Define environment variables
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
-ENV FLASK_RUN_HOST=0.0.0.0
 
 # Run the application with gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]

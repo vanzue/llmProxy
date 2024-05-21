@@ -74,11 +74,11 @@ def gpt35():
 @app.route('/generate/scenes', methods=['POST'])
 @authenticate
 def generate_scenes():
-    deployment_model = "kaigpt4"
-    api_version = "2024-02-15-preview"
-    endpoint = f"{AZURE_ENDPOINT_GPT4}/openai/deployments/{deployment_model}/chat/completions?api-version={api_version}"
-
     try:
+        deployment_model = "kaigpt4"
+        api_version = "2024-02-15-preview"
+        endpoint = f"{AZURE_ENDPOINT_GPT4}/openai/deployments/{deployment_model}/chat/completions?api-version={api_version}"
+
         chat_result = requests.post(endpoint, json=request.json, headers={
             'api-key': AZURE_API_KEY_GPT4,
             'Content-Type': 'application/json'
