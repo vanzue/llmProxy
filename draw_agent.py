@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
+
+from openai import AzureOpenAI
 from agents import Agent
 import requests
 from PIL import Image
 from io import BytesIO
-
-from azure_openai import AzureOpenAIClientSingleton
+import os
 
 class DrawAgent(Agent, ABC):
     @abstractmethod
@@ -14,7 +15,6 @@ class DrawAgent(Agent, ABC):
 
 class AzureOpenAIDalleDrawAgent(DrawAgent):
     def __init__(self):
-        self.client = AzureOpenAIClientSingleton.get_client()
         self.deploymentName = "Dalle3"
 
     def draw(self):
@@ -31,8 +31,11 @@ class ComicAgent(AzureOpenAIDalleDrawAgent):
     def draw(self, scene_description):
         prompt = self.comic_template.format(
             scene_description=scene_description)
-
-        result = self.client.images.generate(
+        client = AzureOpenAI(
+            azure_endpoint=os.getenv('AZURE_SWEDEN_OPENAI_ENDPOINT'),
+            api_key=os.getenv('AZURE_SWEDEN_OPENAI_KEY'),
+            api_version="2024-02-01")
+        result = client.images.generate(
             model=self.deploymentName,  # the name of your DALL-E 3 deployment
             prompt=prompt,
             n=1

@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 import logging
 
 from agents import StoryWritingAgent
-from azure_openai import AzureOpenAIClientSingleton
 from draw_agent import AmericanStyleComicAgent, ChineseStyleComicAgent
 from storyToComics import generate_comics
 
@@ -33,11 +32,6 @@ AZURE_API_KEY_GPT4 = os.getenv('AZURE_API_KEY_GPT4')
 DALLE_ENDPOINT = f"{AZURE_ENDPOINT_DALLE}/openai/deployments/{DEPLOYMENT_MODEL_DALLE}/images/generations?api-version={API_VERSION_DALLE}"
 GPT35_ENDPOINT = f"{AZURE_ENDPOINT_GPT35}/openai/deployments/{DEPLOYMENT_MODEL_GPT35}/chat/completions?api-version={API_VERSION_GPT35}"
 
-with app.app_context():
-    endpoint = os.getenv('AZURE_SWEDEN_OPENAI_ENDPOINT')
-    api_key = os.getenv('AZURE_SWEDEN_OPENAI_KEY')
-    AzureOpenAIClientSingleton(api_key = api_key, endpoint = endpoint)
-
 def authenticate(func):
     def wrapper(*args, **kwargs):
         api_key = request.headers.get('x-api-key')
@@ -50,7 +44,7 @@ def authenticate(func):
 
 @app.route('/ping', methods=['GET'])
 def ping():
-    return jsonify({'message': 'pong'})
+    return jsonify({'message': 'haha'})
 
 
 @app.route('/dalle', methods=['POST'])

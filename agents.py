@@ -1,13 +1,8 @@
 
 import os
 from openai import AzureOpenAI
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider, InteractiveBrowserCredential
-from dotenv import load_dotenv
 from agent_prompt import confuciusAgentPrompt, luoXiangAgentPrompt, superIntelligentAgentPrompt, storytellingAgentPrompt
 from abc import ABC, abstractmethod
-
-from azure_openai import AzureOpenAIClientSingleton
-
 
 class Agent(ABC):
     @abstractmethod
@@ -45,16 +40,17 @@ class ChatClientAgent(Agent):
 
 class AzureOpenAIClientChatAgent(ChatClientAgent):
     def __init__(self, system_prompt):
-        load_dotenv()
         deployment = os.environ["CHAT_COMPLETIONS_DEPLOYMENT_NAME"]
-
-        self.client = AzureOpenAIClientSingleton.get_client()
-
         self.model = deployment
         self.messages = system_prompt
 
     def talk(self):
-        completion = self.client.chat.completions.create(
+        client = AzureOpenAI(
+        azure_endpoint=os.getenv('AZURE_SWEDEN_OPENAI_ENDPOINT'),
+        api_key=os.getenv('AZURE_SWEDEN_OPENAI_KEY'),
+        api_version="2024-02-01")
+        
+        completion = client.chat.completions.create(
             model=self.model,
             messages=self.messages
         )
