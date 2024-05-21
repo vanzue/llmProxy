@@ -33,8 +33,9 @@ DALLE_ENDPOINT = f"{AZURE_ENDPOINT_DALLE}/openai/deployments/{DEPLOYMENT_MODEL_D
 GPT35_ENDPOINT = f"{AZURE_ENDPOINT_GPT35}/openai/deployments/{DEPLOYMENT_MODEL_GPT35}/chat/completions?api-version={API_VERSION_GPT35}"
 
 with app.app_context():
-    endpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
-    AzureOpenAIClientSingleton(endpoint=endpoint)
+    endpoint = os.getenv('AZURE_SWEDEN_OPENAI_ENDPOINT')
+    api_key = os.getenv('AZURE_SWEDEN_OPENAI_KEY')
+    AzureOpenAIClientSingleton(api_key = api_key, endpoint = endpoint)
 
 def authenticate(func):
     def wrapper(*args, **kwargs):

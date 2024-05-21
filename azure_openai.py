@@ -5,21 +5,18 @@ class AzureOpenAIClientSingleton:
     _instance = None
     _client = None
 
-    def __new__(cls, endpoint=None):
+    def __new__(cls, api_key = None, endpoint=None):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._initialize_client(endpoint)
+            cls._initialize_client(api_key,endpoint)
         return cls._instance
 
     @classmethod
-    def _initialize_client(cls, endpoint):
+    def _initialize_client(cls, api_key, endpoint):
         if cls._client is None:
-            token_provider = get_bearer_token_provider(
-                DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
-
             cls._client = AzureOpenAI(
+                api_key = api_key,
                 azure_endpoint=endpoint,
-                azure_ad_token_provider=token_provider,
                 api_version="2024-02-01",
             )
 
