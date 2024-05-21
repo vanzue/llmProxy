@@ -5,6 +5,7 @@ import requests
 from dotenv import load_dotenv
 import logging
 
+from agents import StoryWritingAgent
 from azure_openai import AzureOpenAIClientSingleton
 from storyToComics import generate_comics
 
@@ -117,6 +118,29 @@ def generate_comics_endpoint():
         print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
+@app.route('/generate/stories', methods=['POST'])
+@authenticate
+def generate_stories_endpoint():
+    try:
+        print("generating comics.")
+        data = request.json
+        shortStory = data['shortStory']
+        n = data['n']
+        story_agent = StoryWritingAgent()
+
+        # Provide command to StoryWritingAgent to generate n stories
+        story_agent.provideCommand({"description": f"主题：{shortStory}，创作几幅漫画：{n}"})
+        long_story = story_agent.work()
+
+        print("stories generated done.")
+        print("Stories", long_story);
+        # Split the long story into n individual stories
+        stories = long_story['output'].split('\n\n')[:n]
+        print("Stories", stories);
+        return jsonify(stories)
+    except Exception as e:
+        print("error when generating comics:", e.message)
+        return jsonify({'message': 'Error generating stories', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
