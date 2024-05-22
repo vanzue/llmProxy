@@ -108,12 +108,13 @@ def generate_comics_task(partition_key, job_id, style, shortStory, n):
 
         # Update job status to Success
         with JobStatusDataAccess() as data_access:
-            data_access.update(partition_key, job_id, 'Success',
-                               jsonify(comics).get_data(as_text=True))
+            data_access.update(partition_key, job_id, job_id, 'Success',
+                               json.dumps(comics))
     except Exception as e:
         # Update job status to Failed
         with JobStatusDataAccess() as data_access:
-            data_access.update(partition_key, job_id, 'Failed', str(e))
+            data_access.update(partition_key, job_id,
+                               job_id, 'Failed', str(e))
 
 
 @app.route('/generate/comics', methods=['POST'])
