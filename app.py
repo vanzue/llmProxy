@@ -8,6 +8,9 @@ import logging
 from agents import StoryWritingAgent
 from draw_agent import AmericanStyleComicAgent, ChineseStyleComicAgent
 from storyToComics import generate_comics
+import uuid
+from threading import Thread
+from table_access import JobStatusDataAccess
 
 load_dotenv()
 
@@ -31,6 +34,7 @@ AZURE_API_KEY_GPT4 = os.getenv('AZURE_API_KEY_GPT4')
 
 DALLE_ENDPOINT = f"{AZURE_ENDPOINT_DALLE}/openai/deployments/{DEPLOYMENT_MODEL_DALLE}/images/generations?api-version={API_VERSION_DALLE}"
 GPT35_ENDPOINT = f"{AZURE_ENDPOINT_GPT35}/openai/deployments/{DEPLOYMENT_MODEL_GPT35}/chat/completions?api-version={API_VERSION_GPT35}"
+
 
 def authenticate(func):
     def wrapper(*args, **kwargs):
@@ -97,6 +101,21 @@ def generate_scenes():
         return jsonify({'message': 'Error parsing response', 'details': str(e)}), 500
 
 
+def generate_comics_task(partition_key, job_id, style, shortStory, n):
+    try:
+        # Simulate generate_comics function
+        comics = generate_comics(style, shortStory, n)
+
+        # Update job status to Success
+        with JobStatusDataAccess() as data_access:
+            data_access.update(partition_key, job_id, 'Success',
+                               jsonify(comics).get_data(as_text=True))
+    except Exception as e:
+        # Update job status to Failed
+        with JobStatusDataAccess() as data_access:
+            data_access.update(partition_key, job_id, 'Failed', str(e))
+
+
 @app.route('/generate/comics', methods=['POST'])
 @authenticate
 def generate_comics_endpoint():
@@ -107,12 +126,25 @@ def generate_comics_endpoint():
         shortStory = data['shortStory']
         n = data['n']
         print(f"Style: {style}, Short Story: {shortStory}, n: {n}")
-        comics = generate_comics(style, shortStory, n)
-        print('Comics generated successfully')
-        return jsonify(comics)
+        job_id = str(uuid.uuid4())
+        partition_key = "ComicsGeneration"
+
+        # Add job entity with status Pending
+        with JobStatusDataAccess() as data_access:
+            data_access.add(partition_key, job_id, job_id, 'Pending', '[]')
+
+        # Run the task in a separate thread
+        thread = Thread(target=generate_comics_task, args=(
+            partition_key, job_id, style, shortStory, n))
+        thread.start()
+
+        # Return job ID to frontend
+        return jsonify({'jobId': job_id})
+
     except Exception as e:
         print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
+
 
 @app.route('/generate/stories', methods=['POST'])
 @authenticate
@@ -125,18 +157,20 @@ def generate_stories_endpoint():
         story_agent = StoryWritingAgent()
 
         # Provide command to StoryWritingAgent to generate n stories
-        story_agent.provideCommand({"description": f"主题：{shortStory}，创作几幅漫画：{n}"})
+        story_agent.provideCommand(
+            {"description": f"主题：{shortStory}，创作几幅漫画：{n}"})
         long_story = story_agent.work()
 
         print("stories generated done.")
-        print("Stories", long_story);
+        print("Stories", long_story)
         # Split the long story into n individual stories
         stories = long_story['output'].split('\n\n')[:n]
-        print("Stories", stories);
+        print("Stories", stories)
         return jsonify(stories)
     except Exception as e:
         print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating stories', 'details': str(e)}), 500
+
 
 @app.route('/generate/single_comic', methods=['POST'])
 @authenticate
@@ -145,10 +179,12 @@ def generate_comic_endpoint():
         data = request.json
         story = data['story']
         style = data['style']
-        if style!='american' and style!='chinese':
-            raise ValueError('Invalid style. Please choose "american" or "chinese"')
-        
-        comic_agent = AmericanStyleComicAgent() if style=='american' else ChineseStyleComicAgent()
+        if style != 'american' and style != 'chinese':
+            raise ValueError(
+                'Invalid style. Please choose "american" or "chinese"')
+
+        comic_agent = AmericanStyleComicAgent(
+        ) if style == 'american' else ChineseStyleComicAgent()
 
         # Provide command to StoryWritingAgent to generate n stories
         comic_agent.provideCommand({"scene": story})
@@ -157,6 +193,20 @@ def generate_comic_endpoint():
     except Exception as e:
         print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
+
+
+@app.route('/job/status/<job_id>', methods=['GET'])
+@authenticate
+def get_job_status(job_id):
+    try:
+        partition_key = "ComicsGeneration"
+        with JobStatusDataAccess() as data_access:
+            job_status = data_access.get(partition_key, job_id)
+            return jsonify(job_status)
+    except Exception as e:
+        print(f"Error retrieving job status for jobId {job_id}: {str(e)}")
+        return jsonify({'message': 'Error retrieving job status', 'details': str(e)}), 500
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

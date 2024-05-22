@@ -2,6 +2,7 @@ gunicorn
 Flask
 python-dotenv
 requests
+azure-data-tables
 annotated-types==0.6.0
 anyio==4.3.0
 azure-core==1.30.1
