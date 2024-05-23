@@ -4,6 +4,7 @@ from openai import AzureOpenAI
 from agent_prompt import confuciusAgentPrompt, luoXiangAgentPrompt, superIntelligentAgentPrompt, storytellingAgentPrompt
 from abc import ABC, abstractmethod
 
+
 class Agent(ABC):
     @abstractmethod
     def work(self):
@@ -40,16 +41,16 @@ class ChatClientAgent(Agent):
 
 class AzureOpenAIClientChatAgent(ChatClientAgent):
     def __init__(self, system_prompt):
-        #deployment = os.environ["CHAT_COMPLETIONS_DEPLOYMENT_NAME"]
-        self.model = "35turbojapan"
+        # deployment = os.environ["CHAT_COMPLETIONS_DEPLOYMENT_NAME"]
+        self.model = "gpt4o"
         self.messages = system_prompt
 
     def talk(self):
         client = AzureOpenAI(
-        azure_endpoint=os.getenv('AZURE_ENDPOINT_GPT35'),
-        api_key=os.getenv('AZURE_API_KEY_GPT35'),
-        api_version="2024-02-15-preview")
-        
+            azure_endpoint=os.getenv('AZURE_SOUTH_CENTRAL_US_ENDPOINT'),
+            api_key=os.getenv('AZURE_SOUTH_CENTRAL_US_KEY'),
+            api_version="2024-02-01")
+
         completion = client.chat.completions.create(
             model=self.model,
             messages=self.messages
