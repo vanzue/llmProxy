@@ -56,7 +56,6 @@ class AzureOpenAIClientChatAgent(ChatClientAgent):
         )
 
         response = completion.choices[0].message.content
-        self.appendSystemMessage(response)
         return response
 
     # a universal entry point all agents. if particular interested in
