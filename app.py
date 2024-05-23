@@ -104,17 +104,18 @@ def generate_scenes():
 def generate_comics_task(partition_key, job_id, style, shortStory, n):
     try:
         # Simulate generate_comics function
-        comics = generate_comics(style, shortStory, n)
-
+        comics, stories = generate_comics(style, shortStory, n, job_id)
+        stories = [s.strip() for s in stories]
+        s = '<eos>'.join(stories)
         # Update job status to Success
         with JobStatusDataAccess() as data_access:
-            data_access.update(partition_key, job_id, job_id, 'Success',
+            data_access.update(partition_key, job_id, job_id, 'Success', s,
                                json.dumps(comics))
     except Exception as e:
         # Update job status to Failed
         with JobStatusDataAccess() as data_access:
             data_access.update(partition_key, job_id,
-                               job_id, 'Failed', str(e))
+                               job_id, 'Failed', '', str(e))
 
 
 @app.route('/generate/comics', methods=['POST'])
@@ -132,7 +133,8 @@ def generate_comics_endpoint():
 
         # Add job entity with status Pending
         with JobStatusDataAccess() as data_access:
-            data_access.add(partition_key, job_id, job_id, 'Pending', '[]')
+            data_access.add(partition_key, job_id,
+                            job_id, 'Pending', '[]', '[]')
 
         # Run the task in a separate thread
         thread = Thread(target=generate_comics_task, args=(

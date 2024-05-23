@@ -1,14 +1,16 @@
+import json
 from agents import StoryWritingAgent
 from draw_agent import AmericanStyleComicAgent, ChineseStyleComicAgent
+from table_access import JobStatusDataAccess
 
 
-def generate_comics(style, shortStory, n):
+def generate_comics(style, shortStory, n, job_id):
     # Initialize the StoryWritingAgent
     story_agent = StoryWritingAgent()
 
     # Provide command to StoryWritingAgent to generate n stories
     story_agent.provideCommand(
-        {"description": f"[topic]:{shortStory}，[number_of_comics]：{n}"})
+        {"description": f"[topic]:{shortStory}, [number_of_comics],{n}"})
     long_story = story_agent.work()
 
     print("stories generated done.")
@@ -18,6 +20,10 @@ def generate_comics(style, shortStory, n):
     if len(stories) < n:
         raise ValueError("Not enough stories generated.")
     print("Stories", stories)
+
+    with JobStatusDataAccess() as data_access:
+        data_access.update("ComicsGeneration", job_id, job_id, 'Pending', long_story['output'],
+                           "[]")
 
     # Initialize the appropriate comic agent based on the style
     if style.lower() == 'chinese':
@@ -39,4 +45,4 @@ def generate_comics(style, shortStory, n):
         comic_urls.append(url)
         print(f"Comic generated: {url}")
 
-    return comic_urls
+    return comic_urls, stories

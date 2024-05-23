@@ -25,22 +25,24 @@ class JobStatusDataAccess:
         self.table_client.close()
         self.table_service_client.close()
 
-    def add(self, partition_key, row_key, job_id, job_status, result):
+    def add(self, partition_key, row_key, job_id, job_status, stories, result):
         entity = {
             'PartitionKey': partition_key,
             'RowKey': row_key,
             'JobId': job_id,
             'JobStatus': job_status,
+            'Stories': stories,
             'Result': result
         }
         self.table_client.create_entity(entity=entity)
 
-    def update(self, partition_key, row_key, job_id, job_status, result):
+    def update(self, partition_key, row_key, job_id, job_status, stories, result):
         entity = {
             'PartitionKey': partition_key,
             'RowKey': row_key,
             'JobId': job_id,
             'JobStatus': job_status,
+            'Stories': stories,
             'Result': result
         }
         self.table_client.update_entity(entity=entity, mode=UpdateMode.REPLACE)
@@ -51,6 +53,7 @@ class JobStatusDataAccess:
         return {
             'JobId': entity.get('JobId'),
             'JobStatus': entity.get('JobStatus'),
+            'stories': entity.get('Stories'),
             'Result': entity.get('Result')
         }
 
