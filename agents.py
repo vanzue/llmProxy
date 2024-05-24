@@ -51,6 +51,8 @@ class AzureOpenAIClientChatAgent(ChatClientAgent):
             api_key=os.getenv('AZURE_SOUTH_CENTRAL_US_KEY'),
             api_version="2024-02-01")
 
+        print(f"prompt: {self.messages}")
+
         completion = client.chat.completions.create(
             model=self.model,
             messages=self.messages

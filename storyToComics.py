@@ -10,7 +10,8 @@ def generate_comics(style, shortStory, n, job_id):
 
     # Provide command to StoryWritingAgent to generate n stories
     story_agent.provideCommand(
-        {"description": f"[topic]:{shortStory}, [number_of_comics],{n}"})
+        {"description": f"[topic]:{shortStory}, [number_of_comics]:{n}"})
+    print(f"provide command: {job_id}-{shortStory}-{n}")
     long_story = story_agent.work()
 
     print("stories generated done.")
