@@ -1,4 +1,5 @@
 
+import copy
 import os
 from openai import AzureOpenAI
 from agent_prompt import confuciusAgentPrompt, luoXiangAgentPrompt, superIntelligentAgentPrompt, storytellingAgentPrompt
@@ -115,14 +116,14 @@ class SuperIntelligentAgent(AzureOpenAIClientChatAgent):
 
 class StoryWritingAgent(AzureOpenAIClientChatAgent):
     def __init__(self):
-        super().__init__(storytellingAgentPrompt)
+        super().__init__(copy.deepcopy(storytellingAgentPrompt))
 
     def work(self):
         try:
             output = self.talk()
             return {"output": output}
         except Exception as e:
-            return {"output": "A oo... Storytelling agent is on vacation..."}
+            return {"output": f"A oo... Storytelling agent is on vacation...${str(e)}"}
 
     def getName(self):
         return "Storytelling Agent"
