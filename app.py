@@ -104,13 +104,12 @@ def generate_scenes():
 def generate_comics_task(partition_key, job_id, style, shortStory, n):
     try:
         # Simulate generate_comics function
-        comics, stories = generate_comics(style, shortStory, n, job_id)
-        stories = [s.strip() for s in stories]
-        s = '<eos>'.join(stories)
+        url = generate_comics(style, shortStory, n)
+        result = json.dumps([url])
         # Update job status to Success
         with JobStatusDataAccess() as data_access:
-            data_access.update(partition_key, job_id, job_id, 'Success', s,
-                               json.dumps(comics))
+            data_access.update(partition_key, job_id, job_id, 'Success' if url else 'Failed', "",
+                               result)
     except Exception as e:
         # Update job status to Failed
         with JobStatusDataAccess() as data_access:

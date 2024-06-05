@@ -1,49 +1,19 @@
-import json
-from agents import StoryWritingAgent
-from draw_agent import AmericanStyleComicAgent, ChineseStyleComicAgent
-from table_access import JobStatusDataAccess
+from draw_agent import AmericanStyleComicAgent, ChineseStyleComicAgent, KoreanStyleComicAgent
 
-
-def generate_comics(style, shortStory, n, job_id):
-    # Initialize the StoryWritingAgent
-    story_agent = StoryWritingAgent()
-
-    # Provide command to StoryWritingAgent to generate n stories
-    story_agent.provideCommand(
-        {"description": f"[topic]:{shortStory}, [number_of_comics]:{n}"})
-    print(f"provide command: {job_id}-{shortStory}-{n}")
-    long_story = story_agent.work()
-
-    print("stories generated done.")
-    print("Stories", long_story)
-    # Split the long story into n individual stories
-    stories = long_story['output'].split('<eos>')[:n]
-    if len(stories) < n:
-        raise ValueError("Not enough stories generated.")
-    print("Stories", stories)
-
-    with JobStatusDataAccess() as data_access:
-        data_access.update("ComicsGeneration", job_id, job_id, 'Pending', long_story['output'],
-                           "[]")
-
-    # Initialize the appropriate comic agent based on the style
+def generate_comics(style, shortStory, n):
     if style.lower() == 'chinese':
         comic_agent = ChineseStyleComicAgent()
     elif style.lower() == 'american':
         comic_agent = AmericanStyleComicAgent()
     else:
-        print("Invalid style. Please choose 'chinese' or 'american")
-        raise ValueError(
-            "Invalid style. Please choose 'chinese' or 'american'.")
+        comic_agent = KoreanStyleComicAgent()
 
-    # Create comics and collect the URLs
     comic_urls = []
-    for story in stories:
-        comic_agent.provideCommand({"scene": story.strip()})
-        print("provided command")
-        url = comic_agent.work()
-        print("url", url)
-        comic_urls.append(url)
-        print(f"Comic generated: {url}")
+    comic_agent.provideCommand({"scene": shortStory.strip(), "n":n})
+    print("provided command")
+    url = comic_agent.work()
+    print("url", url)
+    comic_urls.append(url)
+    print(f"Comic generated: {url}")
 
-    return comic_urls, stories
+    return url
