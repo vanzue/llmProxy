@@ -116,7 +116,6 @@ def generate_comics_task(partition_key, job_id, style, shortStory, n):
             data_access.update(partition_key, job_id,
                                job_id, 'Failed', '', str(e))
 
-
 @app.route('/generate/comics', methods=['POST'])
 @authenticate
 def generate_comics_endpoint():
