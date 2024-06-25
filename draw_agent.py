@@ -7,6 +7,7 @@ from PIL import Image
 from io import BytesIO
 import os
 
+
 class DrawAgent(Agent, ABC):
     @abstractmethod
     def draw(self, prompt):
@@ -59,6 +60,7 @@ class ComicAgent(AzureOpenAIDalleDrawAgent):
 class AmericanStyleComicAgent(ComicAgent):
     def __init__(self):
         super().__init__("""1.**视觉冲击力强**：使用清晰的线条和鲜艳的色彩，增强画面的吸引力。2.**现代波普艺术风格**：融合点状网格和粗黑边框，展示波普艺术的现代感。3.**对比鲜明的色彩**：采用红色、黄色、黑色和白色等色彩，增强视觉层次感。4.**夸张的表情和动作**：人物表情和动作夸张，有效强化情感表达。5.**手绘线条**：人物轮廓和细节通过粗犷的手绘线条展现，增加自然和艺术感。""")
+
     def getName(self):
         return "ComicAgent"
 
@@ -69,7 +71,8 @@ class ChineseStyleComicAgent(ComicAgent):
 
     def getName(self):
         return "ComicAgent"
-    
+
+
 class KoreanStyleComicAgent(ComicAgent):
     def __init__(self):
         super().__init__("""1. **细致优美的线条艺术**：线条流畅且精准。   2. **漂亮且富有表现力的人物形象**：拥有大而传神的眼睛。 3. **丰富的面部表情**：生动地传达情感。  4. **动态的动作场景**：带有强烈的运动线和戏剧效果。   5. **优雅现代的背景细节**：拥有现代感美学。""")
@@ -78,12 +81,62 @@ class KoreanStyleComicAgent(ComicAgent):
         return "ComicAgent"
 
 
-if __name__ == "__main__":
-    agent = ChineseStyleComicAgent()
-    agent.provideCommand(
-        {"scene": "一只皮卡丘在和葫芦娃里的蛇精打架，场景在一个森林里"})
-    url = agent.work()
+class CharacterDrawer(AzureOpenAIDalleDrawAgent):
+    def __init__(self, style_description):
+        self.style = style_description
+        super().__init__()
+        self.comic_template = """Scene: {scene_description}. protagonist: {character_description}, comic style, {comic_style}"""
 
+    def draw(self, scene_description, n):
+        pass
+
+    def draw(self, scene_description, character):
+        prompt = self.comic_template.format(
+            scene_description=scene_description, character_description=character, comic_style=self.style)
+        print(prompt)
+        client = AzureOpenAI(
+            azure_endpoint=os.getenv('AZURE_SWEDEN_OPENAI_ENDPOINT'),
+            api_key=os.getenv('AZURE_SWEDEN_OPENAI_KEY'),
+            api_version="2024-02-01")
+        result = client.images.generate(
+            model=self.deploymentName,  # the name of your DALL-E 3 deployment
+            prompt=prompt,
+            n=1
+        )
+        return result.data[0].url
+
+    def work(self):
+        pass
+
+    def getName():
+        return "CharacterDrawer"
+
+    def provideCommand(self, inputObj):
+        pass
+
+
+koreanStyle = "vibrant colors, realistic and detailed character designs, and utilize a top-to-bottom, Well-defined backgrounds, strong emphasis on fashion and setting."
+chineseStyle = "intricate, brush-like ink work reminiscent of classical Chinese painting, a rich color palette, incorporate elements of Chinese mythology and history"
+americanStyle = "realistic proportions, strong use of shadows and highlights for facial features,dynamic, action-oriented poses, thick outlines and a vibrant color palette"
+warmStyle = "warm color, smooth clean lines"
+
+
+def getStyle(keyword):
+    if "korean" in keyword:
+        return koreanStyle
+    if "chinese" in keyword:
+        return chineseStyle
+    if "american" in keyword:
+        return americanStyle
+    if "warm" in keyword:
+        return warmStyle
+    return warmStyle
+
+
+if __name__ == "__main__":
+    agent = CharacterDrawer(warmStyle)
+    url = agent.draw("晚上路边捡到一只白色小猫.",
+                     "short black hair, wearing black glasses, wearing a white shirt, pale skin, partial ear visible.")
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
     img.save("./downloaded_image.png")

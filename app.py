@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 import logging
 
 from agents import StoryWritingAgent
-from draw_agent import AmericanStyleComicAgent, ChineseStyleComicAgent
+from draw_agent import AmericanStyleComicAgent, CharacterDrawer, ChineseStyleComicAgent, getStyle
+from multi_modal_query import DescribeCharacter
 from storyToComics import generate_comics
 import uuid
 from threading import Thread
@@ -116,6 +117,7 @@ def generate_comics_task(partition_key, job_id, style, shortStory, n):
             data_access.update(partition_key, job_id,
                                job_id, 'Failed', '', str(e))
 
+
 @app.route('/generate/comics', methods=['POST'])
 @authenticate
 def generate_comics_endpoint():
@@ -208,15 +210,51 @@ def get_job_status(job_id):
         print(f"Error retrieving job status for jobId {job_id}: {str(e)}")
         return jsonify({'message': 'Error retrieving job status', 'details': str(e)}), 500
 
+
 @app.route('/image/describe', methods=['POST'])
 @authenticate
-def describeAgent():
+def describe_image():
     try:
-        print("Describing images.")
-        
+        data = request.json
+        image = data['data']
+        return DescribeCharacter(image)
     except Exception as e:
         print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
+
+
+@app.route('/image/reference', methods=['POST'])
+def referenceImage():
+    try:
+        data = request.json
+        image = data['ref']
+        style = data['style']
+        story = data['story']
+        character = DescribeCharacter(image)
+        style_description = getStyle(style)
+        comic_agent = CharacterDrawer(style_description)
+        url = comic_agent.draw(story, character)
+        return url
+    except Exception as e:
+        print("error when generating comics:", e.message)
+        return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
+
+
+@app.route('/image/create/character', methods=['POST'])
+def referenceImage():
+    try:
+        data = request.json
+        description = data['description']
+        style = data['style']
+        story = data['story']
+        style_description = getStyle(style)
+        comic_agent = CharacterDrawer(style_description)
+        url = comic_agent.draw(story, description)
+        return url
+    except Exception as e:
+        print("error when generating comics:", e.message)
+        return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

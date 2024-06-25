@@ -1,3 +1,4 @@
+import os
 from abc import abstractmethod
 import base64
 from openai import AzureOpenAI
@@ -6,10 +7,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import os
 
-#run query with an base64 encoded image.
-def describeImage(image_base64_encoded):
+# run query with an base64 encoded image.
+
+def DescribeCharacter(image_base64_encoded):
     client = AzureOpenAI(
         azure_endpoint=os.getenv('AZURE_SOUTH_CENTRAL_US_ENDPOINT'),
         api_key=os.getenv('AZURE_SOUTH_CENTRAL_US_KEY'),
@@ -22,24 +23,25 @@ def describeImage(image_base64_encoded):
             {
               "role": "user",
               "content": [
-                {
-                  "type": "image_url",
-                  "image_url": {
-                    "url": f"data:image/jpeg;base64,{image_base64_encoded.decode('utf-8')}"
+                  {
+                      "type": "image_url",
+                      "image_url": {
+                          "url": f"data:image/jpeg;base64,{image_base64_encoded}"
+                      }
+                  },
+                  {
+                      "type": "text",
+                      "text": "Describe the character in the image, do not describe background, describe in detail, including hair cut, hair color, eye, eyebrow, nose, mouth, shape of face etc, only use keyword, use comma to separate characteristics."
                   }
-                },
-                {
-                  "type": "text",
-                  "text": "Describe the character in the image. You only describe facial characteristics, do not describe background nor clothes, only use keyword, describe character in detail, use comma to seperate characteristics"
-                }
               ]
             },
         ]
     )
-    
+
     return result.choices[0].message.content
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     with open("./self2.jpg", "rb") as image:
         image_base64_encoded = base64.b64encode(image.read())
-        print(describeImage(image_base64_encoded))
+        print(DescribeCharacter(image_base64_encoded))
