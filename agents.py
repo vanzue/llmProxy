@@ -132,7 +132,6 @@ class StoryWritingAgent(AzureOpenAIClientChatAgent):
         self.messages.append(
             {"role": "user", "content": inputObj["description"]})
 
-
 if __name__ == "__main__":
     agent = StoryWritingAgent()
     agent.provideCommand({"description": "主题：小区居民楼电动车严禁上楼，创作几幅漫画：4"})

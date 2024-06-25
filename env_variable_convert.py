@@ -1,6 +1,5 @@
 import json
 
-
 def convert_to_key_value_string(json_list):
     key_value_pairs = []
     for item in json_list:

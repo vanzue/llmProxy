@@ -208,6 +208,15 @@ def get_job_status(job_id):
         print(f"Error retrieving job status for jobId {job_id}: {str(e)}")
         return jsonify({'message': 'Error retrieving job status', 'details': str(e)}), 500
 
+@app.route('/image/describe', methods=['POST'])
+@authenticate
+def describeAgent():
+    try:
+        print("Describing images.")
+        
+    except Exception as e:
+        print("error when generating comics:", e.message)
+        return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
