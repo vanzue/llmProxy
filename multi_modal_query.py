@@ -10,12 +10,19 @@ load_dotenv()
 
 # run query with an base64 encoded image.
 
-def DescribeCharacter(image_base64_encoded):
+def DescribeCharacter(image):
     client = AzureOpenAI(
         azure_endpoint=os.getenv('AZURE_SOUTH_CENTRAL_US_ENDPOINT'),
         api_key=os.getenv('AZURE_SOUTH_CENTRAL_US_KEY'),
         api_version="2024-02-01"
     )
+    
+    url = image
+    def is_url(string):
+        return string.startswith(('http://', 'https://'))
+
+    if not is_url(image):
+      url = f"data:image/jpeg;base64,{image}"
 
     result = client.chat.completions.create(
         model="gpt4o",
@@ -26,12 +33,12 @@ def DescribeCharacter(image_base64_encoded):
                   {
                       "type": "image_url",
                       "image_url": {
-                          "url": f"data:image/jpeg;base64,{image_base64_encoded}"
+                          "url": url
                       }
                   },
                   {
                       "type": "text",
-                      "text": "Describe the character in the image, do not describe background, describe in detail, including hair cut, hair color, eye, eyebrow, nose, mouth, shape of face etc, only use keyword, use comma to separate characteristics."
+                      "text": "Describe the character in the image, do not describe background, including hair cut, hair color, eye, nose, mouth, shape of face etc, only use keyword, use comma to separate characteristics."
                   }
               ]
             },

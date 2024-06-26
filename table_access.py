@@ -2,7 +2,6 @@ from azure.identity import ClientSecretCredential
 from azure.data.tables import TableServiceClient, UpdateMode
 import os
 
-
 class JobStatusDataAccess:
     def __init__(self):
         CLIENT_ID = os.getenv('AZURE_CLIENT_ID', 'your_client_id')

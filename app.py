@@ -7,6 +7,7 @@ import logging
 
 from agents import StoryWritingAgent
 from draw_agent import AmericanStyleComicAgent, CharacterDrawer, ChineseStyleComicAgent, getStyle
+from image_storage_util import compress_and_upload
 from multi_modal_query import DescribeCharacter
 from storyToComics import generate_comics
 import uuid
@@ -223,6 +224,7 @@ def describe_image():
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 
+# reference a image
 @app.route('/image/reference', methods=['POST'])
 def referenceImage():
     try:
@@ -234,14 +236,16 @@ def referenceImage():
         style_description = getStyle(style)
         comic_agent = CharacterDrawer(style_description)
         url = comic_agent.draw(story, character)
-        return url
+        compressed_url = compress_and_upload(url)
+        return jsonify([compressed_url, url])
+    
     except Exception as e:
         print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 
 @app.route('/image/create/character', methods=['POST'])
-def referenceImage():
+def createCharacterComic():
     try:
         data = request.json
         description = data['description']
@@ -250,11 +254,12 @@ def referenceImage():
         style_description = getStyle(style)
         comic_agent = CharacterDrawer(style_description)
         url = comic_agent.draw(story, description)
-        return url
+        compressed_url = compress_and_upload(url)
+        return jsonify([compressed_url, url])
+        
     except Exception as e:
         print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
-
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
