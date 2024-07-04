@@ -40,6 +40,7 @@ APP_SECRET = os.getenv('WECHAT_SECRET')
 DALLE_ENDPOINT = f"{AZURE_ENDPOINT_DALLE}/openai/deployments/{DEPLOYMENT_MODEL_DALLE}/images/generations?api-version={API_VERSION_DALLE}"
 GPT35_ENDPOINT = f"{AZURE_ENDPOINT_GPT35}/openai/deployments/{DEPLOYMENT_MODEL_GPT35}/chat/completions?api-version={API_VERSION_GPT35}"
 
+
 def authenticate(func):
     def wrapper(*args, **kwargs):
         api_key = request.headers.get('x-api-key')
@@ -48,6 +49,7 @@ def authenticate(func):
         return func(*args, **kwargs)
     wrapper.__name__ = func.__name__
     return wrapper
+
 
 @app.route('/ping', methods=['GET'])
 def ping():
@@ -239,7 +241,7 @@ def referenceImage():
         url = comic_agent.draw(story, character)
         compressed_url = compress_and_upload(url)
         return jsonify([compressed_url, url])
-    
+
     except Exception as e:
         print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
@@ -257,15 +259,18 @@ def createCharacterComic():
         url = comic_agent.draw(story, description)
         compressed_url = compress_and_upload(url)
         return jsonify([compressed_url, url])
-        
+
     except Exception as e:
         print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
+
 
 def generate_session_token():
     return str(uuid.uuid4())
 
 # add or update an existing user session
+
+
 def save_session(session_token, openid):
     with UserDataAccess() as userDataAccess:
         try:
@@ -273,12 +278,14 @@ def save_session(session_token, openid):
         except:
             existingUser = None
         if not existingUser:
-            userDataAccess.add(openid, openid, session_token, "False", "", "", "")
+            userDataAccess.add(openid, openid, session_token,
+                               "False", "", "", "")
             return {
                 'session_token': session_token,
             }
         else:
-            userDataAccess.update(openid, openid, session_token, "False", "", "", "")
+            userDataAccess.update(
+                openid, openid, session_token, "False", "", "", "")
             return {
                 'session_token': session_token,
                 'profile_done': existingUser['ProfileDone'],
@@ -287,59 +294,6 @@ def save_session(session_token, openid):
                 'style': existingUser['Style']
             }
 
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.json
-    code = data.get('code')
-
-    if not code:
-        return jsonify({'error': 'missing code'}), 400
-
-    try:
-        response = requests.get('https://api.weixin.qq.com/sns/jscode2session', params={
-            'appid': APP_ID,
-            'secret': APP_SECRET,
-            'js_code': code,
-            'grant_type': 'authorization_code'
-        })
-
-        response_data = response.json()
-
-        if 'errcode' in response_data:
-            return jsonify(response_data), 400
-
-        session_token = generate_session_token()
-        user = save_session(session_token, response_data.get('openid'))
-        return jsonify(user)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.json
-    code = data.get('code')
-
-    if not code:
-        return jsonify({'error': 'missing code'}), 400
-
-    try:
-        response = requests.get('https://api.weixin.qq.com/sns/jscode2session', params={
-            'appid': APP_ID,
-            'secret': APP_SECRET,
-            'js_code': code,
-            'grant_type': 'authorization_code'
-        })
-
-        response_data = response.json()
-
-        if 'errcode' in response_data:
-            return jsonify(response_data), 400
-
-        session_token = generate_session_token()
-        user = save_session(session_token, response_data.get('openid'))
-        return jsonify(user)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
