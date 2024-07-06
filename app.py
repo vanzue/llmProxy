@@ -297,4 +297,4 @@ def save_session(session_token, openid):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    app.run(host="localhost", port=PORT)
+    app.run(host="0.0.0.0", port=PORT)
