@@ -16,13 +16,14 @@ def DescribeCharacter(image):
         api_key=os.getenv('AZURE_SOUTH_CENTRAL_US_KEY'),
         api_version="2024-02-01"
     )
-    
+
     url = image
+
     def is_url(string):
         return string.startswith(('http://', 'https://'))
 
     if not is_url(image):
-      url = f"data:image/jpeg;base64,{image}"
+        url = f"data:image/jpeg;base64,{image}"
 
     result = client.chat.completions.create(
         model="gpt4o",
@@ -38,7 +39,7 @@ def DescribeCharacter(image):
                   },
                   {
                       "type": "text",
-                      "text": "Describe the character in the image, do not describe background, including hair cut, hair color, eye, nose, mouth, shape of face etc, only use keyword, use comma to separate characteristics."
+                      "text": "Describe the character in the image, do not describe background, do describe hair cut, hair color, eye, nose, mouth, shape of face, clothes, only use keyword, use comma to separate characteristics."
                   }
               ]
             },

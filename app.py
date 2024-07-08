@@ -12,7 +12,8 @@ from multi_modal_query import DescribeCharacter
 from storyToComics import generate_comics
 import uuid
 from threading import Thread
-from table_access import JobStatusDataAccess, UserDataAccess
+from table_access import JobStatusDataAccess, SessionDataAccess, UserDataAccess, get_openid_by_session, get_session_by_openid, getUserProfile
+import secrets
 
 load_dotenv()
 
@@ -227,7 +228,92 @@ def describe_image():
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 
-# reference a image
+@app.route('/image/new/comic', methods=['POST'])
+# @authenticate
+# Authenticate with user session key, for now ignore.
+def buildComicProfile():
+    try:
+        data = request.json
+        session_token = data['session_token']
+        if not session_token:
+            return jsonify({'message': 'Missing session token'}), 400
+
+        photo_url = data['photo_url']
+        if not photo_url:
+            return jsonify({'message': 'Missing photo url'}), 400
+
+        # we should use sessoin token to obtain the
+        openid = get_openid_by_session(session_token)
+        character = DescribeCharacter(photo_url)
+        style_description = getStyle('warm')
+        comic_agent = CharacterDrawer(style_description)
+        seed_number = secrets.randbelow(2**32)
+        seed_string = str(seed_number)
+
+        url = comic_agent.drawPortrait(character, seed_string)
+        compressed_url = compress_and_upload(url)
+
+        return jsonify({
+            'compressed_url': compressed_url,
+            'url': url,
+            'character': character,
+            'style': style_description,
+            'seed': seed_string,
+            'session_token': session_token,
+        })
+
+    except Exception as e:
+        print("error when generating comics:", e.message)
+        return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
+
+
+@app.route('/image/determine', methods=['POST'])
+def determineComicMetaData():
+    try:
+        data = request.json
+        session_token = data['session_token']
+        if not session_token:
+            return jsonify({'message': 'Missing session token'}), 400
+
+        openid = get_openid_by_session(session_token)
+        if not openid:
+            return jsonify({'message': 'Invalid session token'}), 400
+
+        with UserDataAccess() as data_access:
+            data_access.upsert(openid, openid, True, data['character'],
+                               data['seed'], data['style'])
+
+        return jsonify({'message': 'Comic meta data updated successfully'})
+    except Exception as e:
+        print("error when generating comics:", e.message)
+        return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
+
+
+# Check this api to determine whether user is going to go through
+# profile setup process.
+@app.route('/image/status', methods=['POST'])
+def CheckUserStatus():
+    try:
+        data = request.json
+        # if user has session_token, then it means he has onboarded the system,
+        # while he could quit the profile set up progress, so user profile could be
+        # not complete.
+        session_token = data['session_token']
+        if not session_token:
+            return jsonify({'message': 'Missing session token'}), 400
+
+        openid = get_openid_by_session(session_token)
+        if not openid:
+            return jsonify({'message': 'Invalid session token'}), 400
+
+        with UserDataAccess() as data_access:
+            user = data_access.get(openid, openid)
+        return jsonify(user)
+    except Exception as e:
+        print("error when generating comics:", e.message)
+        return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
+
+
 @app.route('/image/reference', methods=['POST'])
 def referenceImage():
     try:
@@ -240,6 +326,8 @@ def referenceImage():
         comic_agent = CharacterDrawer(style_description)
         url = comic_agent.draw(story, character)
         compressed_url = compress_and_upload(url)
+        # we should store the description and style here also the seed, so that next time,
+        # it will be easier to generate the similar comics once again.
         return jsonify([compressed_url, url])
 
     except Exception as e:
@@ -265,34 +353,35 @@ def createCharacterComic():
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 
-def generate_session_token():
-    return str(uuid.uuid4())
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    code = data.get('code')
 
-# add or update an existing user session
+    if not code:
+        return jsonify({'error': 'missing code'}), 400
 
+    try:
+        response = requests.get('https://api.weixin.qq.com/sns/jscode2session', params={
+            'appid': APP_ID,
+            'secret': APP_SECRET,
+            'js_code': code,
+            'grant_type': 'authorization_code'
+        })
 
-def save_session(session_token, openid):
-    with UserDataAccess() as userDataAccess:
-        try:
-            existingUser = userDataAccess.get(openid, openid)
-        except:
-            existingUser = None
-        if not existingUser:
-            userDataAccess.add(openid, openid, session_token,
-                               "False", "", "", "")
-            return {
-                'session_token': session_token,
-            }
-        else:
-            userDataAccess.update(
-                openid, openid, session_token, "False", "", "", "")
-            return {
-                'session_token': session_token,
-                'profile_done': existingUser['ProfileDone'],
-                'user_description': existingUser['UserDescription'],
-                'seed': existingUser['Seed'],
-                'style': existingUser['Style']
-            }
+        response_data = response.json()
+        if 'errcode' in response_data:
+            return jsonify(response_data), 400
+        open_id = response_data.get('openid')
+        existing_session = get_session_by_openid(open_id)
+        if existing_session:
+            return jsonify({'session_token': existing_session})
+        new_session = new_session()
+        return jsonify({
+            'session_token': new_session
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

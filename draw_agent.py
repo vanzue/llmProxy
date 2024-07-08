@@ -86,6 +86,7 @@ class CharacterDrawer(AzureOpenAIDalleDrawAgent):
         self.style = style_description
         super().__init__()
         self.comic_template = """Scene: {scene_description}. protagonist: {character_description}, comic style, {comic_style}"""
+        self.character_template = """Character: {character_description}, comic style, {comic_style}, use seed: {seed}"""
 
     def draw(self, scene_description, n):
         pass
@@ -93,6 +94,21 @@ class CharacterDrawer(AzureOpenAIDalleDrawAgent):
     def draw(self, scene_description, character):
         prompt = self.comic_template.format(
             scene_description=scene_description, character_description=character, comic_style=self.style)
+        print(prompt)
+        client = AzureOpenAI(
+            azure_endpoint=os.getenv('AZURE_SWEDEN_OPENAI_ENDPOINT'),
+            api_key=os.getenv('AZURE_SWEDEN_OPENAI_KEY'),
+            api_version="2024-02-01")
+        result = client.images.generate(
+            model=self.deploymentName,  # the name of your DALL-E 3 deployment
+            prompt=prompt,
+            n=1
+        )
+        return result.data[0].url
+
+    def drawPortrait(self, character, seed):
+        prompt = self.character_template.format(
+            character_description=character, comic_style=self.style, seed=seed)
         print(prompt)
         client = AzureOpenAI(
             azure_endpoint=os.getenv('AZURE_SWEDEN_OPENAI_ENDPOINT'),
