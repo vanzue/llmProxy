@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 from flask import Flask, request, jsonify
@@ -7,7 +8,7 @@ import logging
 
 from agents import StoryWritingAgent
 from draw_agent import AmericanStyleComicAgent, CharacterDrawer, ChineseStyleComicAgent, getStyle
-from image_storage_util import compress_and_upload
+from image_storage_util import compress_and_upload, upload_jpg_to_blob
 from multi_modal_query import DescribeCharacter
 from storyToComics import generate_comics
 import uuid
@@ -380,6 +381,19 @@ def login():
         return jsonify({
             'session_token': new_session
         })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/image/upload', methods=['POST'])
+def upload():
+    data = request.json
+    content = data.get('content')
+    
+    try:
+        data = base64.b64decode(content)
+        url = upload_jpg_to_blob(data)
+        return url
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
