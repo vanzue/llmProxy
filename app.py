@@ -229,6 +229,13 @@ def describe_image():
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 
+# create a new character comic
+# ret:
+#   @compressed_url: the compressed url of the comic
+#   @url: the url of the comic
+#   @character: the character description
+#   @style: the style description
+#   @seed: the seed used to generate the comic
 @app.route('/image/new/comic', methods=['POST'])
 # @authenticate
 # Authenticate with user session key, for now ignore.
@@ -260,7 +267,6 @@ def buildComicProfile():
             'character': character,
             'style': style_description,
             'seed': seed_string,
-            'session_token': session_token,
         })
 
     except Exception as e:
@@ -336,18 +342,22 @@ def referenceImage():
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 
-@app.route('/image/create/character', methods=['POST'])
+@app.route('/image/character/story', methods=['POST'])
 def createCharacterComic():
     try:
         data = request.json
         description = data['description']
         style = data['style']
         story = data['story']
+        seed = data['seed']
         style_description = getStyle(style)
         comic_agent = CharacterDrawer(style_description)
-        url = comic_agent.draw(story, description)
+        url = comic_agent.drawSeed(story, description, seed)
         compressed_url = compress_and_upload(url)
-        return jsonify([compressed_url, url])
+        return jsonify({
+            "compressed_url": compressed_url,
+            "url": url
+        })
 
     except Exception as e:
         print("error when generating comics:", e.message)
@@ -384,16 +394,17 @@ def login():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/image/upload', methods=['POST'])
 def upload():
     data = request.json
     content = data.get('content')
-    
+
     try:
         data = base64.b64decode(content)
         url = upload_jpg_to_blob(data)
         return url
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
