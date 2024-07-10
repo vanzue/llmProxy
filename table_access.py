@@ -1,3 +1,4 @@
+import json
 import uuid
 from azure.identity import ClientSecretCredential
 from azure.data.tables import TableServiceClient, UpdateMode
@@ -173,7 +174,97 @@ class SessionDataAccess:
             'OpenId': entity.get('OpenId')
         }
 
+class CollectionDataAccess:
+    def __init__(self):
+        CLIENT_ID = os.getenv('AZURE_CLIENT_ID', 'your_client_id')
+        TENANT_ID = os.getenv('AZURE_TENANT_ID', 'your_tenant_id')
+        CLIENT_SECRET = os.getenv('AZURE_CLIENT_SECRET', 'your_client_secret')
+        STORAGE_ACCOUNT_NAME = "comicstorage"
+        TABLE_NAME = "usercollection"
+        self.credential = ClientSecretCredential(
+            tenant_id=TENANT_ID, client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
+        self.table_service_client = TableServiceClient(
+            endpoint=f"https://{STORAGE_ACCOUNT_NAME}.table.core.windows.net", credential=self.credential)
+        self.table_name = TABLE_NAME
 
+    def __enter__(self):
+        self.table_client = self.table_service_client.get_table_client(
+            table_name=self.table_name)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.table_client.close()
+        self.table_service_client.close()
+
+    # compressed_comics is json list of urls of compressed images.
+    # comics is json list of urls of original images.
+    # open_id is the user's open_id.
+    # collection_name is the name of the collection.
+    def addCollection(self, openid, collection_name,  compressed_comics, comics):
+        entity = {
+            'PartitionKey': openid+collection_name,
+            'RowKey': openid+collection_name,
+            'OpenId': openid,
+            'CollectionName': collection_name,
+            'CompressedComics': json.dumps(compressed_comics),
+            'Comics': json.dumps(comics)
+        }
+        self.table_client.create_entity(entity=entity)
+
+    # get all collections of a user.
+    # filter_query = f"OpenId eq '{openid}'"
+    # entities = sessionDataAccess.table_client.query_entities(
+    # query_filter=filter_query)
+    def getCollections(self, openid):
+        query_filter = f"OpenId eq '{openid}'"
+        entities = self.table_client.query_entities(query_filter = query_filter)
+        result = []
+        
+        for entity in entities:
+            result.append({
+                'CollectionName': entity.get('CollectionName'),
+                'CompressedComics': entity.get('CompressedComics'),
+                'Comics': entity.get('Comics')
+            })
+        
+        return result
+
+    def addComicToCollection(self, openid, collection_name, compressed_comic, comic):
+        entity = self.table_client.get_entity(
+        partition_key=openid+collection_name, row_key=openid+collection_name)
+        
+        compressed_comics_json = entity.get('CompressedComics', '[]')
+        comics_json = entity.get('Comics', '[]')
+        
+        # Parse the JSON strings into Python lists
+        compressed_comics = json.loads(compressed_comics_json)
+        comics = json.loads(comics_json)
+        
+        # Add the new items to the lists
+        compressed_comics.append(compressed_comic)
+        comics.append(comic)
+        
+        # Convert the lists back into JSON strings
+        entity['CompressedComics'] = json.dumps(compressed_comics)
+        entity['Comics'] = json.dumps(comics)
+        
+        # Update the entity in the table
+        self.table_client.update_entity(entity)
+        return True
+
+
+    def updateCollection(self, openid, collection_name, compressed_comics, urls):
+        entity = self.table_client.get_entity(
+        partition_key=openid+collection_name, row_key=openid+collection_name)
+        # Convert the lists back into JSON strings
+        entity['CompressedComics'] = json.dumps(compressed_comics)
+        entity['Comics'] = json.dumps(urls)
+        
+        # Update the entity in the table
+        self.table_client.update_entity(entity)
+        return True
+
+###################PUBLICLY ACCESSIBLE FUNCTIONS####################
 def get_openid_by_session(session_token):
     with SessionDataAccess() as sessionDataAccess:
         try:
@@ -188,7 +279,7 @@ def get_session_by_openid(openid):
         try:
             filter_query = f"OpenId eq '{openid}'"
             entities = sessionDataAccess.table_client.query_entities(
-                query_filter=filter_query)
+                que_firylter=filter_query)
             item = next(entities)
             return item.get('PartitionKey')
         except Exception as e:
@@ -208,5 +299,13 @@ def new_session(openid):
 
 
 if __name__ == "__main__":
-    session_token = get_session_by_openid("user1")
-    print(session_token)
+    with CollectionDataAccess() as collectionDataAccess:
+        # collectionDataAccess.addCollection("12345", "mock_collection_id", [], [])
+        
+        result = collectionDataAccess.updateCollection('12345', 'mock_collection_id', ['mockurl1'], ['mockurl2'])
+        
+        #collectionDataAccess.addComicToCollection("12345", "mock_collection_id", "https://comicstorage.blob.core.windows.net/comics/tt-effect.png", "https://comicstorage.blob.core.windows.net/comics/tt-detail.png")
+        
+        #result = collectionDataAccess.getCollections("12345")
+
+        print(result)
