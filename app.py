@@ -410,10 +410,12 @@ def upload():
 
 # List all collections of a user
 # @param session_token: user session token
+
+
 @app.route('/collection/list/<session_token>', methods=['GET'])
 def listCollection(session_token):
     openid = get_openid_by_session(session_token)
-    
+
     try:
         with CollectionDataAccess() as data_access:
             collections = data_access.getCollections(openid)
@@ -426,6 +428,8 @@ def listCollection(session_token):
 # @param collection_name: collection name
 # @param compressed_url: compressed image url
 # @param url: original image url
+
+
 @app.route('/collection/add', methods=['POST'])
 def addToCollection():
     data = request.json()
@@ -433,12 +437,13 @@ def addToCollection():
     collection_name = data.get('collection_name')
     compressed_url = data.get('compressed_url')
     url = data.get('url')
-    
+
     openid = get_openid_by_session(session_token)
-    
+
     try:
         with CollectionDataAccess() as data_access:
-            data_access.addComicToCollection(openid, collection_name, compressed_url, url)
+            data_access.addComicToCollection(
+                openid, collection_name, compressed_url, url)
             return jsonify({
                 'result': True
             })
@@ -449,6 +454,8 @@ def addToCollection():
 # param @collection_name: collection name
 # param @compressed_urls: compressed image url list [json list]
 # param @urls: original image url list              [json list]
+
+
 @app.route('/collection/update', methods=['POST'])
 def updateComicInCollection():
     data = request.json()
@@ -456,17 +463,19 @@ def updateComicInCollection():
     collection_name = data.get('collection_name')
     compressed_url = data.get('compressed_urls')
     url = data.get('urls')
-    
+
     openid = get_openid_by_session(session_token)
-    
+
     try:
         with CollectionDataAccess() as data_access:
-            data_access.addComicToCollection(openid, collection_name, compressed_url, url)
+            data_access.addComicToCollection(
+                openid, collection_name, compressed_url, url)
             return jsonify({
                 'result': True
             })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
