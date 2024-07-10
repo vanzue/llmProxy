@@ -221,10 +221,12 @@ class CollectionDataAccess:
         result = []
         
         for entity in entities:
+            compressed_comics_json = entity.get('CompressedComics', '[]')
+            comics_json = entity.get('Comics', '[]')
             result.append({
                 'CollectionName': entity.get('CollectionName'),
-                'CompressedComics': entity.get('CompressedComics'),
-                'Comics': entity.get('Comics')
+                'CompressedComics': json.loads(compressed_comics_json),
+                'Comics': json.loads(comics_json)
             })
         
         return result
