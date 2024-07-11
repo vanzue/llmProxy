@@ -432,7 +432,7 @@ def listCollection(session_token):
 
 @app.route('/collection/add', methods=['POST'])
 def addToCollection():
-    data = request.json()
+    data = request.json
     session_token = data.get('session_token')
     collection_name = data.get('collection_name')
     compressed_url = data.get('compressed_url')
@@ -458,7 +458,7 @@ def addToCollection():
 
 @app.route('/collection/update', methods=['POST'])
 def updateComicInCollection():
-    data = request.json()
+    data = request.json
     session_token = data.get('session_token')
     collection_name = data.get('collection_name')
     compressed_url = data.get('compressed_urls')
@@ -470,6 +470,27 @@ def updateComicInCollection():
         with CollectionDataAccess() as data_access:
             data_access.addComicToCollection(
                 openid, collection_name, compressed_url, url)
+            return jsonify({
+                'result': True
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/collection/new', methods=['POST'])
+def addNewCollection():
+    try:
+        data = request.json
+        session_token = data.get('session_token')
+        collection_name = data.get('collection_name')
+        compressed_url = data.get('compressed_url')
+        url = data.get('url')
+
+        openid = get_openid_by_session(session_token)
+
+        with CollectionDataAccess() as data_access:
+            data_access.addCollection(
+                openid, collection_name, [compressed_url], [url])
             return jsonify({
                 'result': True
             })
