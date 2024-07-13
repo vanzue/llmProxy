@@ -8,7 +8,7 @@ import logging
 
 from agents import StoryWritingAgent
 from draw_agent import AmericanStyleComicAgent, CharacterDrawer, ChineseStyleComicAgent, getStyle
-from image_storage_util import compress_and_upload, upload_jpg_to_blob
+from image_storage_util import compress_and_upload, copy_and_upload, upload_jpg_to_blob
 from multi_modal_query import DescribeCharacter
 from storyToComics import generate_comics
 import uuid
@@ -108,11 +108,17 @@ def generate_scenes():
         return jsonify({'message': 'Error parsing response', 'details': str(e)}), 500
 
 
-def generate_comics_task(partition_key, job_id, style, shortStory, n):
+def generate_comics_task(partition_key, job_id, description, story, seed, style_description):
     try:
-        # Simulate generate_comics function
-        url = generate_comics(style, shortStory, n)
-        result = json.dumps([url])
+        comic_agent = CharacterDrawer(style_description)
+        url = comic_agent.drawSeed(story, description, seed)
+        url = copy_and_upload(url)
+        compressed_url = compress_and_upload(url)
+        response = {
+            "compressed_url": compressed_url,
+            "url": url
+        }
+        result = json.dumps([response])
         # Update job status to Success
         with JobStatusDataAccess() as data_access:
             data_access.update(partition_key, job_id, job_id, 'Success' if url else 'Failed', "",
@@ -208,7 +214,7 @@ def generate_comic_endpoint():
 @authenticate
 def get_job_status(job_id):
     try:
-        partition_key = "ComicsGeneration"
+        partition_key = "character-story"
         with JobStatusDataAccess() as data_access:
             job_status = data_access.get(partition_key, job_id)
             return jsonify(job_status)
@@ -351,20 +357,29 @@ def createCharacterComic():
         story = data['story']
         seed = data['seed']
         style_description = getStyle(style)
-        comic_agent = CharacterDrawer(style_description)
-        url = comic_agent.drawSeed(story, description, seed)
-        compressed_url = compress_and_upload(url)
-        return jsonify({
-            "compressed_url": compressed_url,
-            "url": url
-        })
+
+        print("character story endpoint")
+
+        job_id = str(uuid.uuid4())
+        partition_key = "character-story"
+        # Add job entity with status Pending
+        with JobStatusDataAccess() as data_access:
+            data_access.add(partition_key, job_id,
+                            job_id, 'Pending', '[]', '[]')
+
+        thread = Thread(target=generate_comics_task, args=(
+            partition_key, job_id, description, story, seed, style_description
+        ))
+        thread.start()
+
+        return jsonify({'jobId': job_id})
 
     except Exception as e:
         print("error when generating comics:", e.message)
         return jsonify({'message': 'Error generating comics', 'details': str(e)}), 500
 
 
-@app.route('/login', methods=['POST'])
+@ app.route('/login', methods=['POST'])
 def login():
     data = request.json
     code = data.get('code')
@@ -395,7 +410,7 @@ def login():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/image/upload', methods=['POST'])
+@ app.route('/image/upload', methods=['POST'])
 def upload():
     data = request.json
     content = data.get('content')
@@ -412,7 +427,7 @@ def upload():
 # @param session_token: user session token
 
 
-@app.route('/collection/list/<session_token>', methods=['GET'])
+@ app.route('/collection/list/<session_token>', methods=['GET'])
 def listCollection(session_token):
     openid = get_openid_by_session(session_token)
 
@@ -430,7 +445,7 @@ def listCollection(session_token):
 # @param url: original image url
 
 
-@app.route('/collection/add', methods=['POST'])
+@ app.route('/collection/add', methods=['POST'])
 def addToCollection():
     data = request.json
     session_token = data.get('session_token')
@@ -456,7 +471,7 @@ def addToCollection():
 # param @urls: original image url list              [json list]
 
 
-@app.route('/collection/update', methods=['POST'])
+@ app.route('/collection/update', methods=['POST'])
 def updateComicInCollection():
     data = request.json
     session_token = data.get('session_token')
@@ -477,7 +492,7 @@ def updateComicInCollection():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/collection/new', methods=['POST'])
+@ app.route('/collection/new', methods=['POST'])
 def addNewCollection():
     try:
         data = request.json
