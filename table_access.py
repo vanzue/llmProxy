@@ -174,6 +174,7 @@ class SessionDataAccess:
             'OpenId': entity.get('OpenId')
         }
 
+
 class CollectionDataAccess:
     def __init__(self):
         CLIENT_ID = os.getenv('AZURE_CLIENT_ID', 'your_client_id')
@@ -217,9 +218,9 @@ class CollectionDataAccess:
     # query_filter=filter_query)
     def getCollections(self, openid):
         query_filter = f"OpenId eq '{openid}'"
-        entities = self.table_client.query_entities(query_filter = query_filter)
+        entities = self.table_client.query_entities(query_filter=query_filter)
         result = []
-        
+
         for entity in entities:
             compressed_comics_json = entity.get('CompressedComics', '[]')
             comics_json = entity.get('Comics', '[]')
@@ -228,45 +229,46 @@ class CollectionDataAccess:
                 'CompressedComics': json.loads(compressed_comics_json),
                 'Comics': json.loads(comics_json)
             })
-        
+
         return result
 
     def addComicToCollection(self, openid, collection_name, compressed_comic, comic):
         entity = self.table_client.get_entity(
-        partition_key=openid+collection_name, row_key=openid+collection_name)
-        
+            partition_key=openid+collection_name, row_key=openid+collection_name)
+
         compressed_comics_json = entity.get('CompressedComics', '[]')
         comics_json = entity.get('Comics', '[]')
-        
+
         # Parse the JSON strings into Python lists
         compressed_comics = json.loads(compressed_comics_json)
         comics = json.loads(comics_json)
-        
+
         # Add the new items to the lists
         compressed_comics.append(compressed_comic)
         comics.append(comic)
-        
+
         # Convert the lists back into JSON strings
         entity['CompressedComics'] = json.dumps(compressed_comics)
         entity['Comics'] = json.dumps(comics)
-        
+
         # Update the entity in the table
         self.table_client.update_entity(entity)
         return True
-
 
     def updateCollection(self, openid, collection_name, compressed_comics, urls):
         entity = self.table_client.get_entity(
-        partition_key=openid+collection_name, row_key=openid+collection_name)
+            partition_key=openid+collection_name, row_key=openid+collection_name)
         # Convert the lists back into JSON strings
         entity['CompressedComics'] = json.dumps(compressed_comics)
         entity['Comics'] = json.dumps(urls)
-        
+
         # Update the entity in the table
         self.table_client.update_entity(entity)
         return True
 
-###################PUBLICLY ACCESSIBLE FUNCTIONS####################
+################### PUBLICLY ACCESSIBLE FUNCTIONS####################
+
+
 def get_openid_by_session(session_token):
     with SessionDataAccess() as sessionDataAccess:
         try:
@@ -302,12 +304,4 @@ def new_session(openid):
 
 if __name__ == "__main__":
     with CollectionDataAccess() as collectionDataAccess:
-        # collectionDataAccess.addCollection("12345", "mock_collection_id", [], [])
-        
-        result = collectionDataAccess.updateCollection('12345', 'mock_collection_id', ['mockurl1'], ['mockurl2'])
-        
-        #collectionDataAccess.addComicToCollection("12345", "mock_collection_id", "https://comicstorage.blob.core.windows.net/comics/tt-effect.png", "https://comicstorage.blob.core.windows.net/comics/tt-detail.png")
-        
-        #result = collectionDataAccess.getCollections("12345")
-
-        print(result)
+        new_session("12345")
