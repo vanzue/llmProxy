@@ -118,7 +118,7 @@ def generate_comics_task(partition_key, job_id, description, story, seed, style_
             "compressed_url": compressed_url,
             "url": url
         }
-        result = json.dumps([response])
+        result = json.dumps(response)
         # Update job status to Success
         with JobStatusDataAccess() as data_access:
             data_access.update(partition_key, job_id, job_id, 'Success' if url else 'Failed', "",
