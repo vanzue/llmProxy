@@ -56,7 +56,7 @@ def authenticate(func):
 
 @app.route('/ping', methods=['GET'])
 def ping():
-    return jsonify({'message': 'haha'})
+    return jsonify({'message': 'hello world'})
 
 
 @app.route('/dalle', methods=['POST'])
