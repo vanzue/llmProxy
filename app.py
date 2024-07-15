@@ -414,11 +414,10 @@ def login():
 @ app.route('/image/upload', methods=['POST'])
 def upload():
     data = request.json
-    content = data.get('content')
+    filePath = data.get('filePath')
 
     try:
-        data = base64.b64decode(content)
-        url = upload_jpg_to_blob(data)
+        url = cos_client.getFileFromCosAndUploadToBlob(filePath)
         return url
 
     except Exception as e:
@@ -513,6 +512,7 @@ def addNewCollection():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/put-sign', methods=['GET'])
 def get_put_sign():
     file_ext = request.args.get('ext')
@@ -537,6 +537,7 @@ def get_put_sign():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
