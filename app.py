@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import time
 from flask import Flask, request, jsonify
 import requests
 from dotenv import load_dotenv
@@ -10,11 +11,11 @@ from agents import StoryWritingAgent
 from draw_agent import AmericanStyleComicAgent, CharacterDrawer, ChineseStyleComicAgent, getStyle
 from image_storage_util import compress_and_upload, copy_and_upload, upload_jpg_to_blob
 from multi_modal_query import DescribeCharacter
-from storyToComics import generate_comics
 import uuid
 from threading import Thread
 from table_access import CollectionDataAccess, JobStatusDataAccess, SessionDataAccess, UserDataAccess, get_openid_by_session, get_session_by_openid, getUserProfile
 import secrets
+import cos_client
 
 load_dotenv()
 
@@ -512,6 +513,30 @@ def addNewCollection():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/put-sign', methods=['GET'])
+def get_put_sign():
+    file_ext = request.args.get('ext')
+    if not file_ext:
+        return jsonify({'error': 'Missing file extension'}), 400
+
+    bucket = os.getenv('Bucket')
+    region = os.getenv('Region')
+
+    # 生成文件名和路径
+    key = f'uploads/{int(time.time())}_{os.urandom(4).hex()}.{file_ext}'
+    cos_host = f'{bucket}.cos.{region}.myqcloud.com'
+
+    # 生成签名
+    try:
+        response = cos_client.signForUpload(key)
+        return jsonify({
+            'authorization': response['Authorization'],
+            'securityToken': response['SecurityToken'] if 'SecurityToken' in response else '',
+            'cosHost': cos_host,
+            'cosKey': key
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

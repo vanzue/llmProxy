@@ -26,11 +26,21 @@ scheme = 'https'           # 指定使用 http/https 协议来访问 COS，默�
 config = CosConfig(Region=region, SecretId=secret_id, SecretKey=secret_key, Token=token, Scheme=scheme)
 client = CosS3Client(config)
 
-####  获取文件到本地
-response = client.get_object(
-    Bucket=bucket,
-    Key='peiting.jpg'
-)
-file_stream = response['Body'].get_raw_stream()
+def getFileByNameFromStorage(fileName):
+    response = client.get_object(
+        Bucket=bucket,
+        Key=fileName
+    )
+    file_stream = response['Body'].get_raw_stream()
+    file_bytes = file_stream.read()
+    return file_bytes
 
-upload_jpg_to_blob(file_stream)
+def signForUpload(key):
+    response = client.get_auth(
+        Method='PUT',
+        Bucket=bucket,
+        Key=key,
+        Expires=3600
+    )
+    
+    return response
