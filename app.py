@@ -131,6 +131,33 @@ def generate_comics_task(partition_key, job_id, description, story, seed, style_
                                job_id, 'Failed', '', str(e))
 
 
+def create_character_comic(partition_key, job_id, photo_url):
+    try:
+        character = DescribeCharacter(photo_url)
+        style_description = getStyle('warm')
+        comic_agent = CharacterDrawer(style_description)
+        seed_number = secrets.randbelow(2**32)
+        seed_string = str(seed_number)
+
+        url = comic_agent.drawPortrait(character, seed_string)
+        compressed_url = compress_and_upload(url)
+
+        response = {
+            'compressed_url': compressed_url,
+            'url': url,
+        }
+        result = json.dumps(response)
+        with JobStatusDataAccess() as data_access:
+            data_access.update(partition_key, job_id, job_id, 'Success' if url else 'Failed', "",
+                               result)
+
+    except Exception as e:
+        # Update job status to Failed
+        with JobStatusDataAccess() as data_access:
+            data_access.update(partition_key, job_id,
+                               job_id, 'Failed', '', str(e))
+
+
 @app.route('/generate/comics', methods=['POST'])
 @authenticate
 def generate_comics_endpoint():
@@ -259,22 +286,21 @@ def buildComicProfile():
 
         # we should use sessoin token to obtain the
         openid = get_openid_by_session(session_token)
-        character = DescribeCharacter(photo_url)
-        style_description = getStyle('warm')
-        comic_agent = CharacterDrawer(style_description)
-        seed_number = secrets.randbelow(2**32)
-        seed_string = str(seed_number)
+        job_id = str(uuid.uuid4())
+        partition_key = "ComicsGeneration"
 
-        url = comic_agent.drawPortrait(character, seed_string)
-        compressed_url = compress_and_upload(url)
+        # Add job entity with status Pending
+        with JobStatusDataAccess() as data_access:
+            data_access.add(partition_key, job_id,
+                            job_id, 'Pending', '[]', '[]')
 
-        return jsonify({
-            'compressed_url': compressed_url,
-            'url': url,
-            'character': character,
-            'style': style_description,
-            'seed': seed_string,
-        })
+        # Run the task in a separate thread
+        thread = Thread(target=create_character_comic, args=(
+            partition_key, job_id, photo_url))
+        thread.start()
+
+        # Return job ID to frontend
+        return jsonify({'jobId': job_id})
 
     except Exception as e:
         print("error when generating comics:", e.message)
