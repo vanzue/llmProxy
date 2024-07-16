@@ -143,7 +143,10 @@ def create_character_comic(partition_key, job_id, photo_url):
         compressed_url = compress_and_upload(url)
 
         response = {
+            'character': character,
+            'style': style_description,
             'compressed_url': compressed_url,
+            'seed': seed_string,
             'url': url,
         }
         result = json.dumps(response)
