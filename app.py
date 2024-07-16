@@ -169,7 +169,7 @@ def generate_comics_endpoint():
         n = data['n']
         print(f"Style: {style}, Short Story: {shortStory}, n: {n}")
         job_id = str(uuid.uuid4())
-        partition_key = "ComicsGeneration"
+        partition_key = "character-story"
 
         # Add job entity with status Pending
         with JobStatusDataAccess() as data_access:
@@ -287,7 +287,7 @@ def buildComicProfile():
         # we should use sessoin token to obtain the
         openid = get_openid_by_session(session_token)
         job_id = str(uuid.uuid4())
-        partition_key = "ComicsGeneration"
+        partition_key = "character-story"
 
         # Add job entity with status Pending
         with JobStatusDataAccess() as data_access:
