@@ -15,7 +15,6 @@ import uuid
 from threading import Thread
 from table_access import CollectionDataAccess, JobStatusDataAccess, SessionDataAccess, UserDataAccess, get_openid_by_session, get_session_by_openid, getUserProfile
 import secrets
-import cos_client
 
 load_dotenv()
 
@@ -542,30 +541,30 @@ def addNewCollection():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/put-sign', methods=['GET'])
-def get_put_sign():
-    file_ext = request.args.get('ext')
-    if not file_ext:
-        return jsonify({'error': 'Missing file extension'}), 400
+# @app.route('/put-sign', methods=['GET'])
+# def get_put_sign():
+#     file_ext = request.args.get('ext')
+#     if not file_ext:
+#         return jsonify({'error': 'Missing file extension'}), 400
 
-    bucket = os.getenv('Bucket')
-    region = os.getenv('Region')
+#     bucket = os.getenv('Bucket')
+#     region = os.getenv('Region')
 
-    # 生成文件名和路径
-    key = f'uploads/{int(time.time())}_{os.urandom(4).hex()}.{file_ext}'
-    cos_host = f'{bucket}.cos.{region}.myqcloud.com'
+#     # 生成文件名和路径
+#     key = f'uploads/{int(time.time())}_{os.urandom(4).hex()}.{file_ext}'
+#     cos_host = f'{bucket}.cos.{region}.myqcloud.com'
 
-    # 生成签名
-    try:
-        response = cos_client.signForUpload(key)
-        return jsonify({
-            'authorization': response['Authorization'],
-            'securityToken': response['SecurityToken'] if 'SecurityToken' in response else '',
-            'cosHost': cos_host,
-            'cosKey': key
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+#     # 生成签名
+#     try:
+#         response = cos_client.signForUpload(key)
+#         return jsonify({
+#             'authorization': response['Authorization'],
+#             'securityToken': response['SecurityToken'] if 'SecurityToken' in response else '',
+#             'cosHost': cos_host,
+#             'cosKey': key
+#         })
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
