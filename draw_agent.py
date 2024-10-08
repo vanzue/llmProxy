@@ -129,9 +129,9 @@ class CharacterDrawer(AzureOpenAIDalleDrawAgent):
         client = AzureOpenAI(
             azure_endpoint=os.getenv('AZURE_SWEDEN_OPENAI_ENDPOINT'),
             api_key=os.getenv('AZURE_SWEDEN_OPENAI_KEY'),
-            api_version="2024-02-01")
+            api_version="2024-05-01-preview")
         result = client.images.generate(
-            model=self.deploymentName,  # the name of your DALL-E 3 deployment
+            model="dall-e-3",  # the name of your DALL-E 3 deployment
             prompt=prompt,
             n=1
         )
