@@ -454,6 +454,40 @@ def upload():
 # List all collections of a user
 # @param session_token: user session token
 
+# 允许的文件扩展名
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# 新的上传图片的 endpoint
+@app.route('/upload_image', methods=['POST'])
+def upload_image():
+    # 检查请求中是否包含文件
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['file']
+
+    # 检查是否选择了文件
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    # 检查文件扩展名是否允许
+    if file and allowed_file(file.filename):
+        # 读取文件的二进制数据
+        file_data = file.read()
+
+        # 调用封装的上传函数
+        try:
+            file_url = upload_jpg_to_blob(file_data)
+            return file_url
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'File type not allowed. Only .jpg, .jpeg, .png are allowed'}), 400
+
 
 @ app.route('/collection/list/<session_token>', methods=['GET'])
 def listCollection(session_token):
@@ -539,33 +573,6 @@ def addNewCollection():
             })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-# @app.route('/put-sign', methods=['GET'])
-# def get_put_sign():
-#     file_ext = request.args.get('ext')
-#     if not file_ext:
-#         return jsonify({'error': 'Missing file extension'}), 400
-
-#     bucket = os.getenv('Bucket')
-#     region = os.getenv('Region')
-
-#     # 生成文件名和路径
-#     key = f'uploads/{int(time.time())}_{os.urandom(4).hex()}.{file_ext}'
-#     cos_host = f'{bucket}.cos.{region}.myqcloud.com'
-
-#     # 生成签名
-#     try:
-#         response = cos_client.signForUpload(key)
-#         return jsonify({
-#             'authorization': response['Authorization'],
-#             'securityToken': response['SecurityToken'] if 'SecurityToken' in response else '',
-#             'cosHost': cos_host,
-#             'cosKey': key
-#         })
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
-
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
